@@ -79,3 +79,13 @@ def test_subsample_is_evenly_spaced_unique_and_order_preserving():
     sub = subsample(ids, 8)
     assert sub == ["C00", "C06", "C12", "C18", "C24", "C30", "C36", "C42"]
     assert subsample(ids, 100) == ids and len(set(subsample(ids, 7))) == 7
+
+
+def test_decision_quality_contrast_uses_the_playbook_match_metric():
+    ids = [f"C{i}" for i in range(10)]
+    scored = []
+    for i, cid in enumerate(ids):
+        scored.append(synthetic("none", True, True, cid) | {"matches_preferred": False})      # compliant but wrong offer
+        scored.append(synthetic("rag", True, True, cid) | {"matches_preferred": i < 9})
+    c = {x["contrast"]: x for x in compute_metrics(scored)["contrasts"]}["offer matches playbook: RAG vs no policy"]
+    assert (c["only_first"], c["only_second"]) == (9, 0) and c["p"] == pytest.approx(2 * 0.5 ** 9)

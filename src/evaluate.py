@@ -161,6 +161,10 @@ def compute_metrics(scored: list[dict]) -> dict:
     contrast("first draft: full policy vs no policy", "full", "first_ok", "none", "first_ok")
     contrast("first draft: RAG vs no policy", "rag", "first_ok", "none", "first_ok")
     contrast("first draft: RAG vs full policy", "rag", "first_ok", "full", "first_ok")
+    contrast("offer matches playbook: full policy vs no policy", "full", "matches_preferred", "none", "matches_preferred")
+    contrast("offer matches playbook: RAG vs no policy", "rag", "matches_preferred", "none", "matches_preferred")
+    contrast("offer matches playbook: RAG vs full policy", "rag", "matches_preferred", "full", "matches_preferred")
+    contrast("offer matches playbook: rag+verify vs rag", "rag+verify", "matches_preferred", "rag", "matches_preferred")
     for base in ("none", "full", "rag"):
         contrast(f"verifier loop on {base}: final vs first draft", f"{base}+verify", "final_ok", f"{base}+verify", "first_ok")
     return out
