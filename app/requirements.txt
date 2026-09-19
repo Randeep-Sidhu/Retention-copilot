@@ -1,0 +1,8 @@
+# Lightweight dependencies for the Streamlit app (deploys on Streamlit Community Cloud).
+streamlit>=1.40
+pandas>=2.2
+numpy>=1.26
+scikit-learn>=1.5
+scipy>=1.11
+matplotlib>=3.8
+pydantic>=2.6

@@ -171,6 +171,10 @@ def compute_metrics(scored: list[dict]) -> dict:
 
 
 # ----------------------------------------------------------------------------- report
+def p_text(p: float) -> str:
+    return "< 0.0001" if p < 0.0001 else f"{p:.4f}"
+
+
 def pct(d):
     return f"{d['k']}/{d['n']} ({100 * d['rate']:.0f}%; {100 * d['ci'][0]:.0f}-{100 * d['ci'][1]:.0f})"
 
@@ -207,7 +211,7 @@ def write_report(metrics: dict, model: str, mix: dict, examples: list[str], out_
                     f"{100 * m['matches_preferred']['rate']:.0f}% | {m['mean_prompt_tokens']:.0f} | "
                     f"{m['mean_llm_calls']:.2f} | {m['mean_llm_latency_s']:.1f}s |")
     con = ["| contrast (paired, same scenarios) | only first succeeds | only second succeeds | exact McNemar p |", "|---|---|---|---|"]
-    con += [f"| {c['contrast']} | {c['only_first']} | {c['only_second']} | {c['p']:.4f} |" for c in metrics["contrasts"]]
+    con += [f"| {c['contrast']} | {c['only_first']} | {c['only_second']} | {p_text(c['p'])} |" for c in metrics["contrasts"]]
     all_rules = sorted({r for v in metrics["rule_rates"].values() for r in v})
     rules = ["| first-draft violation (share of scenarios) | " + " | ".join(metrics["configs"]) + " |",
              "|---|" + "---|" * len(metrics["configs"])]

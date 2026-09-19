@@ -3,7 +3,7 @@ import json
 
 import pytest
 
-from src.evaluate import (compute_metrics, mcnemar_exact, report, rules_of, run_eval, subsample, substantive, wilson)
+from src.evaluate import (compute_metrics, mcnemar_exact, p_text, report, rules_of, run_eval, subsample, substantive, wilson)
 from src.store import RunStore
 
 IDS = ["A-FIBER", "B-ONEYR", "C-OPTOUT", "D-LIMIT", "F-2YR"]
@@ -89,3 +89,7 @@ def test_decision_quality_contrast_uses_the_playbook_match_metric():
         scored.append(synthetic("rag", True, True, cid) | {"matches_preferred": i < 9})
     c = {x["contrast"]: x for x in compute_metrics(scored)["contrasts"]}["offer matches playbook: RAG vs no policy"]
     assert (c["only_first"], c["only_second"]) == (9, 0) and c["p"] == pytest.approx(2 * 0.5 ** 9)
+
+
+def test_p_values_are_never_printed_as_zero():
+    assert p_text(0.0000000001) == "< 0.0001" and p_text(0.1078) == "0.1078" and p_text(0.0625) == "0.0625"

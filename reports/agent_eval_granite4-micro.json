@@ -1,0 +1,375 @@
+{
+  "n": 48,
+  "configs": {
+    "none": {
+      "first_ok": {
+        "k": 1,
+        "n": 48,
+        "rate": 0.020833333333333332,
+        "ci": [
+          0.003687110977510663,
+          0.1089921799525186
+        ]
+      },
+      "final_ok": {
+        "k": 1,
+        "n": 48,
+        "rate": 0.020833333333333332,
+        "ci": [
+          0.003687110977510663,
+          0.1089921799525186
+        ]
+      },
+      "escalated": {
+        "k": 0,
+        "n": 48,
+        "rate": 0.0,
+        "ci": [
+          0.0,
+          0.07410012966611748
+        ]
+      },
+      "schema_ok_first": {
+        "k": 48,
+        "n": 48,
+        "rate": 1.0,
+        "ci": [
+          0.9258998703338825,
+          1.0
+        ]
+      },
+      "matches_preferred": {
+        "k": 11,
+        "n": 48,
+        "rate": 0.22916666666666666,
+        "ci": [
+          0.13307826266911238,
+          0.36539264090003454
+        ]
+      },
+      "grounded_first": null,
+      "mean_llm_calls": 1.0,
+      "mean_revisions": 0.0,
+      "mean_prompt_tokens": 419.7083333333333,
+      "mean_completion_tokens": 123.45833333333333,
+      "mean_llm_latency_s": 2.794228460604207,
+      "mean_context_recall": null
+    },
+    "full": {
+      "first_ok": {
+        "k": 26,
+        "n": 48,
+        "rate": 0.5416666666666666,
+        "ci": [
+          0.4029107454564982,
+          0.6742475770713254
+        ]
+      },
+      "final_ok": {
+        "k": 26,
+        "n": 48,
+        "rate": 0.5416666666666666,
+        "ci": [
+          0.4029107454564982,
+          0.6742475770713254
+        ]
+      },
+      "escalated": {
+        "k": 0,
+        "n": 48,
+        "rate": 0.0,
+        "ci": [
+          0.0,
+          0.07410012966611748
+        ]
+      },
+      "schema_ok_first": {
+        "k": 48,
+        "n": 48,
+        "rate": 1.0,
+        "ci": [
+          0.9258998703338825,
+          1.0
+        ]
+      },
+      "matches_preferred": {
+        "k": 11,
+        "n": 48,
+        "rate": 0.22916666666666666,
+        "ci": [
+          0.13307826266911238,
+          0.36539264090003454
+        ]
+      },
+      "grounded_first": {
+        "k": 0,
+        "n": 48,
+        "rate": 0.0,
+        "ci": [
+          0.0,
+          0.07410012966611748
+        ]
+      },
+      "mean_llm_calls": 1.0,
+      "mean_revisions": 0.0,
+      "mean_prompt_tokens": 2809.7083333333335,
+      "mean_completion_tokens": 184.375,
+      "mean_llm_latency_s": 3.6035105241459178,
+      "mean_context_recall": null
+    },
+    "rag": {
+      "first_ok": {
+        "k": 27,
+        "n": 48,
+        "rate": 0.5625,
+        "ci": [
+          0.42275017419827776,
+          0.6929873095934576
+        ]
+      },
+      "final_ok": {
+        "k": 27,
+        "n": 48,
+        "rate": 0.5625,
+        "ci": [
+          0.42275017419827776,
+          0.6929873095934576
+        ]
+      },
+      "escalated": {
+        "k": 0,
+        "n": 48,
+        "rate": 0.0,
+        "ci": [
+          0.0,
+          0.07410012966611748
+        ]
+      },
+      "schema_ok_first": {
+        "k": 48,
+        "n": 48,
+        "rate": 1.0,
+        "ci": [
+          0.9258998703338825,
+          1.0
+        ]
+      },
+      "matches_preferred": {
+        "k": 20,
+        "n": 48,
+        "rate": 0.4166666666666667,
+        "ci": [
+          0.2884966777841157,
+          0.5571866771602372
+        ]
+      },
+      "grounded_first": {
+        "k": 20,
+        "n": 48,
+        "rate": 0.4166666666666667,
+        "ci": [
+          0.2884966777841157,
+          0.5571866771602372
+        ]
+      },
+      "mean_llm_calls": 1.0,
+      "mean_revisions": 0.0,
+      "mean_prompt_tokens": 1582.1458333333333,
+      "mean_completion_tokens": 166.89583333333334,
+      "mean_llm_latency_s": 3.296183205833131,
+      "mean_context_recall": 1.0
+    },
+    "rag+verify": {
+      "first_ok": {
+        "k": 28,
+        "n": 48,
+        "rate": 0.5833333333333334,
+        "ci": [
+          0.4428133228397627,
+          0.7115033222158843
+        ]
+      },
+      "final_ok": {
+        "k": 48,
+        "n": 48,
+        "rate": 1.0,
+        "ci": [
+          0.9258998703338825,
+          1.0
+        ]
+      },
+      "escalated": {
+        "k": 3,
+        "n": 48,
+        "rate": 0.0625,
+        "ci": [
+          0.0214832329083893,
+          0.1683543805494635
+        ]
+      },
+      "schema_ok_first": {
+        "k": 48,
+        "n": 48,
+        "rate": 1.0,
+        "ci": [
+          0.9258998703338825,
+          1.0
+        ]
+      },
+      "matches_preferred": {
+        "k": 31,
+        "n": 48,
+        "rate": 0.6458333333333334,
+        "ci": [
+          0.5043905701034309,
+          0.7656635587439514
+        ]
+      },
+      "grounded_first": {
+        "k": 20,
+        "n": 48,
+        "rate": 0.4166666666666667,
+        "ci": [
+          0.2884966777841157,
+          0.5571866771602372
+        ]
+      },
+      "mean_llm_calls": 1.9375,
+      "mean_revisions": 0.9375,
+      "mean_prompt_tokens": 3289.6458333333335,
+      "mean_completion_tokens": 291.8333333333333,
+      "mean_llm_latency_s": 5.697672187770952,
+      "mean_context_recall": 1.0
+    }
+  },
+  "contrasts": [
+    {
+      "contrast": "first draft: full policy vs no policy",
+      "only_first": 25,
+      "only_second": 0,
+      "p": 5.960464477539063e-08
+    },
+    {
+      "contrast": "first draft: RAG vs no policy",
+      "only_first": 26,
+      "only_second": 0,
+      "p": 2.9802322387695312e-08
+    },
+    {
+      "contrast": "first draft: RAG vs full policy",
+      "only_first": 6,
+      "only_second": 5,
+      "p": 1.0
+    },
+    {
+      "contrast": "offer matches playbook: full policy vs no policy",
+      "only_first": 10,
+      "only_second": 10,
+      "p": 1.0
+    },
+    {
+      "contrast": "offer matches playbook: RAG vs no policy",
+      "only_first": 17,
+      "only_second": 8,
+      "p": 0.10775214433670044
+    },
+    {
+      "contrast": "offer matches playbook: RAG vs full policy",
+      "only_first": 14,
+      "only_second": 5,
+      "p": 0.063568115234375
+    },
+    {
+      "contrast": "offer matches playbook: rag+verify vs rag",
+      "only_first": 11,
+      "only_second": 0,
+      "p": 0.0009765625
+    },
+    {
+      "contrast": "verifier loop on rag: final vs first draft",
+      "only_first": 20,
+      "only_second": 0,
+      "p": 1.9073486328125e-06
+    }
+  ],
+  "rule_rates": {
+    "none": {
+      "terms": 0.7708333333333334,
+      "numbers": 0.7083333333333334,
+      "eligibility": 0.3125,
+      "consent": 0.14583333333333334,
+      "discount_cap": 0.14583333333333334,
+      "contact_limit": 0.08333333333333333
+    },
+    "full": {
+      "eligibility": 0.22916666666666666,
+      "terms": 0.16666666666666666,
+      "contact_limit": 0.08333333333333333,
+      "consent": 0.041666666666666664
+    },
+    "rag": {
+      "eligibility": 0.20833333333333334,
+      "numbers": 0.125,
+      "contact_limit": 0.08333333333333333,
+      "terms": 0.0625,
+      "no_action": 0.041666666666666664
+    },
+    "rag+verify": {
+      "eligibility": 0.20833333333333334,
+      "numbers": 0.125,
+      "contact_limit": 0.08333333333333333,
+      "terms": 0.0625,
+      "no_action": 0.020833333333333332
+    }
+  },
+  "scenarios": [
+    "0107-WESLM",
+    "0274-JKUJR",
+    "0468-YRPXN",
+    "0679-IDSTG",
+    "0691-IFBQW",
+    "1016-DJTSV",
+    "1618-CFHME",
+    "1942-OQFRW",
+    "2027-OAQQC",
+    "2273-QCKXA",
+    "2360-RDGRO",
+    "2692-PFYTJ",
+    "2853-CWQFQ",
+    "2856-NNASM",
+    "2868-MZAGQ",
+    "3195-TQDZX",
+    "3223-DWFIO",
+    "3511-APPBJ",
+    "3845-FXCYS",
+    "4194-WHFCB",
+    "4195-NZGTA",
+    "4298-OYIFC",
+    "4391-LNRXK",
+    "4415-IJZTP",
+    "4636-JGAAI",
+    "4706-AXVKM",
+    "4791-QRGMF",
+    "4879-GZLFH",
+    "5076-YVXCM",
+    "5293-WXJAK",
+    "5419-JPRRN",
+    "5609-CEBID",
+    "5879-SESNB",
+    "6178-KFNHS",
+    "6362-QHAFM",
+    "6521-YYTYI",
+    "6543-CPZMK",
+    "6877-TJMBR",
+    "6907-FLBER",
+    "6946-LMSQS",
+    "7339-POGZN",
+    "7426-RHZGU",
+    "7486-KSRVI",
+    "7576-JMYWV",
+    "7587-AOVVU",
+    "8033-VCZGH",
+    "8808-ELEHO",
+    "8854-CCVSQ"
+  ]
+}
