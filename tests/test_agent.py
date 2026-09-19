@@ -26,6 +26,10 @@ def drop_opt_out(p):
     return p.model_copy(update={"message": p.message.replace(" Reply STOP to opt out.", "")})
 
 
+def add_number(p):
+    return p.model_copy(update={"message": p.message + " Offer ends in 5 days."})
+
+
 def too_big(p):
     return p.model_copy(update={"discount_pct": 25, "offer_id": "LOYALTY_DISCOUNT", "duration_months": 6,
                                 "message": "Hello, enjoy 25% off for 6 months. Reply STOP to opt out.",
@@ -57,15 +61,15 @@ def test_unknown_customer_is_an_error_not_a_crash(test_db, tmp_path):
 
 
 def test_verifier_feedback_repairs_a_bad_first_draft(test_db, tmp_path):
-    llm = ScriptedLLM(faults=[drop_opt_out])
+    llm = ScriptedLLM(faults=[add_number])
     out = make_agent(test_db, tmp_path, llm=llm).run("A-FIBER")
-    assert any("opt_out_line" in v for v in out["first_violations"])
+    assert any("[numbers]" in v for v in out["first_violations"])
     assert out["violations"] == [] and out["attempts"] == 1 and out["llm_calls"] == 2 and out["status"] == "queued"
     assert [e["node"] for e in out["trace"]].count("revise") == 1
 
 
 def test_escalates_after_max_revisions_with_a_flag_for_the_reviewer(test_db, tmp_path):
-    agent = make_agent(test_db, tmp_path, llm=ScriptedLLM(always_fault=drop_opt_out))
+    agent = make_agent(test_db, tmp_path, llm=ScriptedLLM(always_fault=add_number))
     out = agent.run("A-FIBER")
     assert out["status"] == "escalated" and out["attempts"] == 2 and out["llm_calls"] == 3
     assert "verifier_failed" in agent.store.queue()[0]["flags_json"]
@@ -147,7 +151,7 @@ def test_policy_modes_get_the_decision_procedure_and_baseline_does_not(test_db):
     prof = SqlTool(test_db).profile("A-FIBER")
     for mode, has in (("none", False), ("full", True), ("rag", True)):
         system = build_messages(mode, "[x#y]\ntext" if mode != "none" else "", prof)[0][1]
-        assert ("FIRST offer in its preferred order" in system) is has, mode
+        assert ("Take the FIRST offer whose eligibility rules" in system) is has, mode
         assert "short SMS" in system                                    # format guidance is shared by every config
 
 
@@ -159,5 +163,23 @@ def test_revisions_are_requested_with_increasing_attempt_numbers(test_db, tmp_pa
             seen.append(attempt)
             return super().draft(messages, profile, attempt)
 
-    make_agent(test_db, tmp_path, llm=Spy(always_fault=drop_opt_out)).run("A-FIBER")
+    make_agent(test_db, tmp_path, llm=Spy(always_fault=add_number)).run("A-FIBER")
     assert seen == [0, 1, 2]
+
+
+def test_mandatory_opt_out_line_is_appended_by_the_system_not_the_model(test_db, tmp_path):
+    out = make_agent(test_db, tmp_path, llm=ScriptedLLM(faults=[drop_opt_out])).run("A-FIBER")
+    assert out["first_violations"] == [] and out["proposal"]["message"].endswith("Reply STOP to opt out.")
+    assert out["llm_calls"] == 1
+    assert any(e.get("footer_appended") for e in out["trace"] if e["node"] == "draft")
+
+
+def test_footer_can_be_switched_off_to_expose_the_model_failure(test_db, tmp_path):
+    out = make_agent(test_db, tmp_path, cfg="rag", llm=ScriptedLLM(faults=[drop_opt_out]), system_footer=False).run("A-FIBER")
+    assert any("[opt_out_line]" in v for v in out["violations"])
+
+
+def test_footer_is_never_added_to_service_messages_or_no_action(test_db, tmp_path):
+    agent = make_agent(test_db, tmp_path)
+    for cid in ("C-OPTOUT", "D-LIMIT", "F-2YR"):
+        assert "STOP" not in agent.run(cid)["proposal"]["message"], cid

@@ -139,7 +139,7 @@ def _message_violations(p: Proposal) -> list[Violation]:
         v.append(Violation("length", f"{p.channel} message is {len(msg)} characters; the limit is {limit}. "
                                      f"Rewrite it in at most {limit - 70} characters"))
     if o["promotional"] and OPT_OUT_LINE.lower() not in msg.lower():
-        v.append(Violation("opt_out_line", f'promotional messages must include the exact line "{OPT_OUT_LINE}"'))
+        v.append(Violation("opt_out_line", f'add this exact sentence at the end of the message: "{OPT_OUT_LINE}."'))
     for rule, patterns in (("forbidden_language", FORBIDDEN_MARKETING), ("prediction_terms", PREDICTION_TERMS),
                            ("protected_terms", PROTECTED_TERMS)):
         found = _hits(patterns, msg)
@@ -183,13 +183,16 @@ def check(p: Proposal, profile: dict, valid_ids: set[str] | None = None,
         return v + cites()
     if limit_reached:
         return [Violation("contact_limit", (f"customer already had {profile['contacts_last_90d']} contacts in 90 days "
-                                            f"(limit {MAX_CONTACTS_90D}); the action must be NO_ACTION"))] + cites()
+                                            f"(limit {MAX_CONTACTS_90D}); the action must be NO_ACTION: offer_id NONE, discount_pct 0, "
+                                            "duration_months 0 and an empty message"))] + cites()
     if p.offer_id not in OFFERS:
         return [Violation("terms", "action OFFER needs a real offer_id from the catalog")]
     v = []
     why = ineligibility(p.offer_id, profile)
     if why:
-        v.append(Violation(*why))
+        hint = (" Choose a different offer this customer is eligible for (SERVICE_CHECKIN is always available)."
+                if why[0] == "eligibility" else "")
+        v.append(Violation(why[0], why[1] + hint))
     return v + _terms_violations(p, profile) + _message_violations(p) + cites()
 
 

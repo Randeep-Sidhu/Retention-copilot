@@ -30,7 +30,8 @@ from .scenarios import build_scenarios, scenario_mix  # noqa: E402
 from .sql_tool import SqlTool  # noqa: E402
 from .store import RunStore  # noqa: E402
 
-EVAL_DB = ROOT / "db" / "eval_runs.db"
+EVAL_DB = ROOT / "db" / "eval_runs.db"        # final, reported evaluation
+DEV_DB = ROOT / "db" / "dev_runs.db"          # prompt development runs (never reported as results)
 ORDER = ["none", "none+verify", "full", "full+verify", "rag", "rag+verify"]
 _RULE = re.compile(r"^\[(\w+)\]")
 
@@ -190,7 +191,8 @@ def model_slug(model: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", model.lower()).strip("-")
 
 
-def write_report(metrics: dict, model: str, mix: dict, examples: list[str], out_dir: Path = REPORT_DIR) -> None:
+def write_report(metrics: dict, model: str, mix: dict, examples: list[str], out_dir: Path = REPORT_DIR,
+                 stem: str = "agent_eval") -> None:
     slug = model_slug(model)
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "figures").mkdir(parents=True, exist_ok=True)
@@ -209,23 +211,27 @@ def write_report(metrics: dict, model: str, mix: dict, examples: list[str], out_
               for r in all_rules]
     ground = [f"- {n}: valid citations on {pct(m['grounded_first'])} of first drafts" for n, m in metrics["configs"].items() if m["grounded_first"]]
     recall = [f"- {n}: mean context recall {m['mean_context_recall']:.2f}" for n, m in metrics["configs"].items() if m["mean_context_recall"] is not None]
-    md = [f"# Agent evaluation\n\nModel: `{model}` (temperature 0). {metrics['n']} held-out customers who pass the expected-value gate, "
+    kind = ("**DEVELOPMENT run** (used to iterate on prompts; not the reported result).\n\n" if stem.startswith("dev")
+            else "**Final evaluation.** These customers were never used to tune prompts (customers whose drafts were "
+                 "inspected during development are excluded).\n\n")
+    md = [f"# Agent evaluation\n\n{kind}Model: `{model}` (temperature 0 for first drafts). {metrics['n']} held-out customers who pass the expected-value gate, "
           "stratified to over-represent edge cases (no marketing consent, contact limit reached, new customers, high risk, high value). "
           "Every configuration sees the same customers.\n",
           "**Scenario mix** (a customer can carry several tags): " + ", ".join(f"{k} {v}" for k, v in mix.items()) + "\n",
           "*Compliant* = no policy violation from the deterministic verifier, ignoring citation rules. Compliance of a verifier-loop "
           "configuration's **final** draft is high by construction, which is why first-draft compliance (the effect of the prompt and "
-          "the retrieved policy) is reported separately. 'Offer matches playbook' compares the final offer with the first eligible "
+          "the retrieved policy) is reported separately. The mandatory opt-out line is appended by the system when the model omits it "
+          "(mandatory disclosures should not depend on a model). 'Offer matches playbook' compares the final offer with the first eligible "
           "entry in the segment's preferred order. CI = 95% Wilson interval.\n",
           "## Results\n" + "\n".join(rows), "\n## Paired comparisons\n" + "\n".join(con),
           "\n## Which rules the first drafts break\n" + "\n".join(rules),
           "\n## Grounding and retrieval\n" + "\n".join(ground + recall),
-          f"\n![compliance](figures/agent_eval_{slug}.png)\n"]
+          f"\n![compliance](figures/{stem}_{slug}.png)\n"]
     if examples:
         md.append("## Example repairs (first draft -> verifier feedback -> final)\n" + "\n\n".join(examples))
-    (out_dir / f"agent_eval_{slug}.md").write_text("\n".join(md) + "\n", encoding="utf-8")
-    (out_dir / f"agent_eval_{slug}.json").write_text(json.dumps(metrics, indent=2, default=float), encoding="utf-8")
-    make_figure(metrics, out_dir / "figures" / f"agent_eval_{slug}.png")
+    (out_dir / f"{stem}_{slug}.md").write_text("\n".join(md) + "\n", encoding="utf-8")
+    (out_dir / f"{stem}_{slug}.json").write_text(json.dumps(metrics, indent=2, default=float), encoding="utf-8")
+    make_figure(metrics, out_dir / "figures" / f"{stem}_{slug}.png")
 
 
 def repair_examples(runs: list[dict], limit: int = 3) -> list[str]:
@@ -239,13 +245,13 @@ def repair_examples(runs: list[dict], limit: int = 3) -> list[str]:
     return ex
 
 
-def report(store: RunStore, model: str, db_path=DB_PATH, out_dir: Path = REPORT_DIR) -> dict:
+def report(store: RunStore, model: str, db_path=DB_PATH, out_dir: Path = REPORT_DIR, stem: str = "agent_eval") -> dict:
     runs = load_runs(store, model)
     sql = SqlTool(db_path)
     profiles = {c: sql.profile(c) for c in {r["customer_id"] for r in runs}}
     scored = [score_run(r, profiles[r["customer_id"]]) for r in runs]
     metrics = compute_metrics(scored)
-    write_report(metrics, model, scenario_mix(metrics["scenarios"], db_path), repair_examples(runs), out_dir)
+    write_report(metrics, model, scenario_mix(metrics["scenarios"], db_path), repair_examples(runs), out_dir, stem)
     return metrics
 
 
@@ -254,21 +260,26 @@ def main():
     ap.add_argument("--model", default="granite4:micro")
     ap.add_argument("--provider", default="ollama", choices=["ollama", "scripted"])
     ap.add_argument("--base-url", default=None)
-    ap.add_argument("--n", type=int, default=48)
+    ap.add_argument("--pool", default="final", choices=["dev", "final"],
+                    help="dev = iterate on prompts; final = the reported evaluation (run it only when prompts are frozen)")
+    ap.add_argument("--n", type=int, default=None, help="scenarios (default 48 for final, 16 for dev)")
     ap.add_argument("--configs", default="all", help="comma-separated names or 'all'")
     ap.add_argument("--report-only", action="store_true")
-    ap.add_argument("--fresh", action="store_true", help="delete previous eval runs first")
+    ap.add_argument("--fresh", action="store_true", help="delete previous runs of this pool first")
     ap.add_argument("--retrieval", default=None, choices=["tfidf", "dense", "hybrid"])
     a = ap.parse_args()
-    if a.fresh and EVAL_DB.exists():
-        EVAL_DB.unlink()
+    n = a.n or (48 if a.pool == "final" else 16)
+    db_file, stem = (DEV_DB, "dev_eval") if a.pool == "dev" else (EVAL_DB, "agent_eval")
+    if a.fresh and db_file.exists():
+        db_file.unlink()
     model_tag = "scripted" if a.provider == "scripted" else a.model
     if not a.report_only:
-        ids = subsample(build_scenarios(max(48, a.n)), a.n)
+        ids = subsample(build_scenarios(48, pool=a.pool), n)
         names = ORDER if a.configs == "all" else a.configs.split(",")
-        run_eval(ids, names, a.model, a.provider, a.base_url, retrieval_backend=a.retrieval)
-    m = report(RunStore(EVAL_DB), model_tag)
-    print(f"\nReport written to {REPORT_DIR / ('agent_eval_' + model_slug(model_tag) + '.md')} ({m['n']} scenarios x {len(m['configs'])} configs)")
+        run_eval(ids, names, a.model, a.provider, a.base_url, runs_db=db_file, retrieval_backend=a.retrieval)
+    m = report(RunStore(db_file), model_tag, stem=stem)
+    print(f"\nReport written to {REPORT_DIR / (stem + '_' + model_slug(model_tag) + '.md')} "
+          f"({m['n']} scenarios x {len(m['configs'])} configs, pool {a.pool})")
     for name, c in m["configs"].items():
         print(f"  {name:<12} first {pct(c['first_ok']):<26} final {pct(c['final_ok'])}")
 

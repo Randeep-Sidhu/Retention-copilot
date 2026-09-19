@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 import re
 
-from .policy_spec import COMPANY
+from .policy_spec import COMPANY, MAX_CONTACTS_90D
 
 SYSTEM_BASE = f"""You are a retention-offer drafting assistant for {COMPANY}, a telecom company. For one customer you choose the next retention action and draft the customer message. A person reviews everything before it is sent.
 
@@ -17,12 +17,13 @@ Return ONE JSON object with these fields, in this order:
 - message: the text sent to the customer, a short SMS of one or two sentences with no sign-off (empty string for NO_ACTION). The customer facts are for your decision only; do not repeat them in the message.
 - citations: ids of the policy sections you relied on (empty list if no policy is provided)."""
 
-_PROCEDURE = """
-How to decide:
-1. If the customer has reached the contact limit, the action is NO_ACTION.
-2. Otherwise open the playbook for the customer's contract and internet service and take the FIRST offer in its preferred order that the customer is eligible for; check that offer's eligibility rules in the catalog.
-3. Use that offer's exact terms and stay within the discount caps.
-4. Write the message following the message standards."""
+_PROCEDURE = f"""
+How to decide (work through these in order):
+1. Contact limit: if contacts_last_90d is {MAX_CONTACTS_90D} or more, the action is NO_ACTION with offer_id NONE, discount_pct 0, duration_months 0 and an empty message.
+2. Consent: if marketing_opt_in is 0, the only allowed offer is SERVICE_CHECKIN.
+3. Otherwise open the playbook for the customer's contract and internet service and go down its preferred order from the top. Take the FIRST offer whose eligibility rules in the catalog all hold for this customer's tenure, contract, internet_service and tech_support. Skip any offer that fails a rule.
+4. Use that offer's exact terms and stay within the discount caps.
+5. Write the message following the message standards."""
 
 POLICY_INSTRUCTIONS = {
     "none": "No policy documents are provided. Use good practice for compliant telecom marketing.",

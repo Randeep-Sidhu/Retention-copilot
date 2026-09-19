@@ -22,7 +22,8 @@ from langgraph.graph import END, START, StateGraph
 from .config import Economics
 from .llm import OllamaLLM, ScriptedLLM
 from .policy_engine import Violation, check, review_flags
-from .policy_spec import (HIGH_RISK_THRESHOLD, HIGH_VALUE_MONTHLY, MAX_CONTACTS_90D, NEW_CUSTOMER_MAX_TENURE)
+from .policy_spec import (HIGH_RISK_THRESHOLD, HIGH_VALUE_MONTHLY, MAX_CONTACTS_90D, NEW_CUSTOMER_MAX_TENURE,
+                          OFFERS, OPT_OUT_LINE)
 from .prompts import build_messages, format_chunks
 from .retriever import Retriever, load_corpus
 from .schemas import Proposal
@@ -40,6 +41,7 @@ class AgentConfig:
     retrieval_backend: str = "hybrid" # tfidf | dense | hybrid (falls back to tfidf if dense is unavailable)
     top_k_per_query: int = 1          # sections per single-topic query
     use_gate: bool = True
+    system_footer: bool = True        # append the mandatory opt-out line in code if the model left it out
     enqueue: bool = True
     model: str = "granite4:micro"
     temperature: float = 0.0
@@ -203,10 +205,17 @@ class RetentionAgent:
         return {"policy_text": text, "retrieved_ids": ids,
                 "trace": [self._ev("context", mode=mode, sections=len(ids), **extra)]}
 
+    def _with_footer(self, prop):
+        """Mandatory disclosures are appended deterministically: they should not depend on a language model."""
+        if (self.cfg.system_footer and prop is not None and prop.action == "OFFER" and prop.offer_id in OFFERS
+                and OFFERS[prop.offer_id]["promotional"] and OPT_OUT_LINE.lower() not in prop.message.lower()):
+            return prop.model_copy(update={"message": f"{prop.message.rstrip()} {OPT_OUT_LINE}.".strip()}), True
+        return prop, False
+
     def _after_llm(self, s, res, node):
-        prop = res.proposal
+        prop, footer = self._with_footer(res.proposal)
         detail = dict(ok=prop is not None, prompt_tokens=res.prompt_tokens, completion_tokens=res.completion_tokens,
-                      latency_s=round(res.latency_s, 2), error=res.error)
+                      latency_s=round(res.latency_s, 2), error=res.error, footer_appended=footer)
         if prop is not None:
             detail.update(action=prop.action, offer_id=prop.offer_id, discount_pct=prop.discount_pct,
                           duration_months=prop.duration_months)

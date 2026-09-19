@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import random
 import sqlite3
+import zlib
 
 from .config import DB_PATH, Economics
 from .policy_engine import preferred_offer
@@ -22,8 +23,29 @@ def gate_passing_test_ids(db_path=DB_PATH, econ: Economics | None = None) -> lis
     return [cid for cid, p, mrr in rows if float(expected_value(p, mrr, econ)) > 0]
 
 
-def sample_test_customers(n: int = 5, seed: int = 7, db_path=DB_PATH, econ: Economics | None = None) -> list[str]:
-    ids = gate_passing_test_ids(db_path, econ)
+# Customers whose drafts I read while developing the prompts. They are excluded from the final evaluation.
+DEV_SEEN = {"4763-PGDPO", "2528-HFYZX", "5650-YLIBA", "6960-HVYXR", "0080-OROZO", "2446-BEGGB",
+            "5299-SJCZT", "9306-CPCBC", "7089-IVVAZ", "9174-FKWZE", "6101-IMRMM"}
+
+
+def _bucket(customer_id: str) -> int:
+    return zlib.crc32(customer_id.encode()) % 2
+
+
+def pool_ids(pool: str = "final", db_path=DB_PATH) -> list[str]:
+    """Two disjoint pools of held-out customers. 'dev' is for iterating on prompts; 'final' is only for the reported
+    evaluation and excludes every customer whose drafts were inspected during development."""
+    if pool not in ("dev", "final"):
+        raise ValueError("pool must be 'dev' or 'final'")
+    ids = gate_passing_test_ids(db_path)
+    if pool == "dev":
+        return [c for c in ids if _bucket(c) == 0]
+    return [c for c in ids if _bucket(c) == 1 and c not in DEV_SEEN]
+
+
+def sample_test_customers(n: int = 5, seed: int = 7, db_path=DB_PATH) -> list[str]:
+    """Random customers for smoke tests: always from the development pool, never from the final evaluation pool."""
+    ids = pool_ids("dev", db_path)
     return random.Random(seed).sample(ids, min(n, len(ids)))
 
 
@@ -46,10 +68,10 @@ QUOTAS = {"contact_limit": 4, "loyalty_preferred": 8, "opt_out": 6, "new_custome
           "high_value": 5, "one_year": 4, "phone_only": 4, "m2m_dsl": 3}          # filled rarest-first; rest is random
 
 
-def build_scenarios(n: int = 48, seed: int = 11, db_path=DB_PATH) -> list[str]:
+def build_scenarios(n: int = 48, seed: int = 11, db_path=DB_PATH, pool: str = "final") -> list[str]:
     """Stratified, seeded scenario set: quotas for edge cases (no consent, contact limit, new, high risk, high
     value, contract types), then random fill. Deterministic for a given database."""
-    ids = gate_passing_test_ids(db_path)
+    ids = pool_ids(pool, db_path)
     sql = SqlTool(db_path)
     profiles = {cid: sql.profile(cid) for cid in ids}
     rng = random.Random(seed)
