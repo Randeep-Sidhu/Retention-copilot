@@ -1,0 +1,139 @@
+{
+  "n_customers": 7043,
+  "churn_rate": 0.2653698707936959,
+  "n_train": 5282,
+  "n_test": 1761,
+  "selected_model": "logreg",
+  "logreg": {
+    "roc_auc": 0.8411388089982095,
+    "pr_auc": 0.6448329558468152,
+    "brier": 0.1372750654133256,
+    "log_loss": 0.4205621711071313,
+    "ece": 0.01817827569754643,
+    "top_decile_lift": 2.78530757251314,
+    "cv_roc_auc": 0.850249593485815,
+    "params": {
+      "clf__C": 0.5
+    }
+  },
+  "hist_gb": {
+    "roc_auc": 0.8434141764493677,
+    "pr_auc": 0.6582567653116209,
+    "brier": 0.13604195660974133,
+    "log_loss": 0.4174192201583618,
+    "ece": 0.013976967843900009,
+    "top_decile_lift": 2.8495839011095976,
+    "cv_roc_auc": 0.8500454486789764,
+    "params": {
+      "clf__learning_rate": 0.05,
+      "clf__max_depth": 2,
+      "clf__max_iter": 200
+    }
+  },
+  "delta_auc_gb_minus_lr": {
+    "mean": 0.00235481952672007,
+    "lo": -0.0020224990175551185,
+    "hi": 0.0069515874466398115
+  },
+  "delta_prauc_gb_minus_lr": {
+    "mean": 0.013144754859853532,
+    "lo": -0.0038427014138876555,
+    "hi": 0.030351432522596686
+  },
+  "ablations": {
+    "add_demographics": {
+      "mean": -0.00017565085000051384,
+      "lo": -0.001985288807731905,
+      "hi": 0.0017469245041319885
+    },
+    "add_total_charges": {
+      "mean": 0.0006767772857259516,
+      "lo": -0.0004318184492096866,
+      "hi": 0.0017925100389321823
+    },
+    "banded_minus_numeric_tenure_lr": {
+      "mean": 0.0038671067264092677,
+      "lo": -0.0013697146320632819,
+      "hi": 0.009341669297361773
+    },
+    "gb_minus_lr_numeric_tenure": {
+      "mean": 0.006221926253129338,
+      "lo": 0.0005834575740020082,
+      "hi": 0.012128442786796123
+    },
+    "corr_total_charges_vs_tenure_x_monthly": 0.9995605537972279
+  },
+  "economics": {
+    "save_rate": 0.25,
+    "takeup_non_churners": 0.25,
+    "discount_pct": 0.15,
+    "discount_months": 6,
+    "margin": 0.35,
+    "saved_lifetime_months": 12,
+    "contact_cost": 3.0
+  },
+  "policies": [
+    {
+      "policy": "Contact nobody",
+      "contacted_pct": 0.0,
+      "churners_reached_pct": 0.0,
+      "precision_pct": 0.0,
+      "net_value_per_1000": 0.0
+    },
+    {
+      "policy": "Contact everyone",
+      "contacted_pct": 100.0,
+      "churners_reached_pct": 100.0,
+      "precision_pct": 26.519,
+      "net_value_per_1000": 3406.444
+    },
+    {
+      "policy": "Top 20% by churn risk",
+      "contacted_pct": 19.989,
+      "churners_reached_pct": 49.251,
+      "precision_pct": 65.341,
+      "net_value_per_1000": 6805.492
+    },
+    {
+      "policy": "Expected value > 0 (proposed)",
+      "contacted_pct": 39.864,
+      "churners_reached_pct": 79.015,
+      "precision_pct": 52.564,
+      "net_value_per_1000": 8990.392
+    }
+  ],
+  "sensitivity_net_value_range_per_1000": [
+    463.54855195911415,
+    25851.129471890967
+  ],
+  "sensitivity_contacted_pct_range": [
+    10.90289608177172,
+    64.33844406587166
+  ],
+  "fairness_gaps": {
+    "gender": {
+      "contact_rate_ratio_min_over_max": 0.9820105820105819,
+      "tpr_gap": 0.03516011885110604,
+      "fpr_gap": 0.018778568680721364,
+      "calibration_gap": 0.005819570365489357
+    },
+    "senior_citizen": {
+      "contact_rate_ratio_min_over_max": 0.5600619023931908,
+      "tpr_gap": 0.16200997861724875,
+      "fpr_gap": 0.1993947684782158,
+      "calibration_gap": 0.04683995398052099
+    },
+    "partner": {
+      "contact_rate_ratio_min_over_max": 0.5286586728234155,
+      "tpr_gap": 0.15336060783167738,
+      "fpr_gap": 0.19367672445875442,
+      "calibration_gap": 0.013496979208211857
+    },
+    "dependents": {
+      "contact_rate_ratio_min_over_max": 0.38578576338379394,
+      "tpr_gap": 0.28979328165374674,
+      "fpr_gap": 0.20543965565580535,
+      "calibration_gap": 0.0062547592429285925
+    }
+  }
+}
