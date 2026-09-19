@@ -1,0 +1,126 @@
+[
+  {
+    "backend": "tfidf",
+    "queries": 28,
+    "hit@1": 0.39285714285714285,
+    "hit@3": 0.5,
+    "hit@5": 0.5714285714285714,
+    "mrr": 0.5018270641589969,
+    "misses_at_3": [
+      [
+        "highest discount percentage allowed for a customer with no long-term contract",
+        "discount_caps#month-to-month-contracts",
+        9
+      ],
+      [
+        "can we give a price reduction to someone locked in for two years",
+        "discount_caps#two-year-contracts",
+        12
+      ],
+      [
+        "discount ceiling for customers on a twelve month plan",
+        "discount_caps#one-year-contracts",
+        25
+      ],
+      [
+        "what can we offer someone who signed up two months ago",
+        "discount_caps#new-customers-0-3-months",
+        7
+      ],
+      [
+        "offer that trades a discount for a longer commitment",
+        "offer_catalog#term-upgrade",
+        9
+      ],
+      [
+        "customer declined marketing communications",
+        "consent_and_contact#marketing-consent",
+        4
+      ],
+      [
+        "how often may we reach out to the same person",
+        "consent_and_contact#contact-frequency",
+        21
+      ],
+      [
+        "maximum length of a text message",
+        "consent_and_contact#channel-limits",
+        21
+      ],
+      [
+        "which words are banned in customer messages",
+        "message_standards#prohibited-language",
+        34
+      ],
+      [
+        "is it ok to mention how old the customer is",
+        "message_standards#protected-characteristics",
+        5
+      ],
+      [
+        "best first offer for a monthly fiber customer",
+        "segment_playbooks#month-to-month-fiber-optic",
+        8
+      ],
+      [
+        "best first offer for a monthly DSL customer",
+        "segment_playbooks#month-to-month-dsl",
+        8
+      ],
+      [
+        "how should a good message be laid out",
+        "message_standards#structure",
+        6
+      ],
+      [
+        "example of a well written tech support text",
+        "message_standards#examples-of-acceptable-messages",
+        14
+      ]
+    ]
+  },
+  {
+    "backend": "dense",
+    "queries": 28,
+    "hit@1": 0.8571428571428571,
+    "hit@3": 1.0,
+    "hit@5": 1.0,
+    "mrr": 0.9107142857142857,
+    "misses_at_3": []
+  },
+  {
+    "backend": "hybrid",
+    "queries": 28,
+    "hit@1": 0.5357142857142857,
+    "hit@3": 0.8214285714285714,
+    "hit@5": 0.8214285714285714,
+    "mrr": 0.6796060090702948,
+    "misses_at_3": [
+      [
+        "discount ceiling for customers on a twelve month plan",
+        "discount_caps#one-year-contracts",
+        12
+      ],
+      [
+        "how often may we reach out to the same person",
+        "consent_and_contact#contact-frequency",
+        9
+      ],
+      [
+        "maximum length of a text message",
+        "consent_and_contact#channel-limits",
+        8
+      ],
+      [
+        "which words are banned in customer messages",
+        "message_standards#prohibited-language",
+        15
+      ],
+      [
+        "example of a well written tech support text",
+        "message_standards#examples-of-acceptable-messages",
+        7
+      ]
+    ]
+  }
+]
