@@ -217,7 +217,7 @@ class RetentionAgent:
 
     def n_draft(self, s):
         msgs = build_messages(self.cfg.policy_mode, s["policy_text"], s["profile"])
-        return self._after_llm(s, self.llm.draft(msgs, profile=s["profile"]), "draft")
+        return self._after_llm(s, self.llm.draft(msgs, profile=s["profile"], attempt=0), "draft")
 
     def n_verify(self, s):
         if s.get("proposal") is None:
@@ -239,7 +239,7 @@ class RetentionAgent:
     def n_revise(self, s):
         prev = Proposal(**s["proposal"]).model_dump_json() if s.get("proposal") else None
         msgs = build_messages(self.cfg.policy_mode, s["policy_text"], s["profile"], prev, s["violations"])
-        out = self._after_llm(s, self.llm.draft(msgs, profile=s["profile"]), "revise")
+        out = self._after_llm(s, self.llm.draft(msgs, profile=s["profile"], attempt=s["attempts"] + 1), "revise")
         out["attempts"] = s["attempts"] + 1
         return out
 

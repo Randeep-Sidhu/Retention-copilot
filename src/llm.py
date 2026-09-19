@@ -20,21 +20,32 @@ class DraftResult:
 
 
 class OllamaLLM:
-    """Granite (or any Ollama model) through LangChain's ChatOllama with schema-constrained output."""
+    """Granite (or any Ollama model) through LangChain's ChatOllama with schema-constrained output.
+
+    Attempt 0 (the first draft) is deterministic (temperature 0). Revision attempts sample a little (0.3, 0.6) with a
+    different seed: at temperature 0 an unchanged prompt gives an unchanged answer, so a model that ignored the
+    feedback once would ignore it again.
+    """
 
     def __init__(self, model="granite4:micro", temperature=0.0, num_ctx=8192, seed=42, base_url=None,
                  num_predict=700, timeout=180):
-        from langchain_ollama import ChatOllama          # lazy: only needed when a real model is used
-        kwargs = dict(model=model, temperature=temperature, num_ctx=num_ctx, seed=seed, num_predict=num_predict,
-                      client_kwargs={"timeout": timeout})
+        self.model, self._chains = model, {}
+        self._kw = dict(model=model, num_ctx=num_ctx, num_predict=num_predict, client_kwargs={"timeout": timeout})
         if base_url:
-            kwargs["base_url"] = base_url
-        self.model = model
-        self._chain = ChatOllama(**kwargs).with_structured_output(Proposal, method="json_schema", include_raw=True)
+            self._kw["base_url"] = base_url
+        self._temperature, self._seed = temperature, seed
 
-    def draft(self, messages, profile=None) -> DraftResult:
+    def _chain(self, attempt: int):
+        if attempt not in self._chains:
+            from langchain_ollama import ChatOllama          # lazy: only needed when a real model is used
+            temp = self._temperature if attempt == 0 else min(0.9, self._temperature + 0.3 * attempt)
+            chat = ChatOllama(temperature=temp, seed=self._seed + attempt, **self._kw)
+            self._chains[attempt] = chat.with_structured_output(Proposal, method="json_schema", include_raw=True)
+        return self._chains[attempt]
+
+    def draft(self, messages, profile=None, attempt: int = 0) -> DraftResult:
         t0 = time.perf_counter()
-        out = self._chain.invoke(messages)
+        out = self._chain(attempt).invoke(messages)
         raw = out["raw"]
         meta = getattr(raw, "response_metadata", None) or {}
         err = out.get("parsing_error")
@@ -56,7 +67,7 @@ class ScriptedLLM:
         self.faults, self.always_fault, self.calls = list(faults or []), always_fault, 0
         self.model = "scripted"
 
-    def draft(self, messages, profile=None) -> DraftResult:
+    def draft(self, messages, profile=None, attempt: int = 0) -> DraftResult:
         t0 = time.perf_counter()
         prop = reference_proposal(profile)
         fault = self.faults[self.calls] if self.calls < len(self.faults) else self.always_fault

@@ -60,6 +60,13 @@ def mcnemar_exact(a: list[bool], b: list[bool]) -> tuple[int, int, float]:
 
 
 # ----------------------------------------------------------------------------- running
+def subsample(ids: list[str], n: int) -> list[str]:
+    """Evenly spaced subset that keeps the stratified order, so a small run still mixes all scenario types."""
+    if n >= len(ids):
+        return list(ids)
+    return [ids[int(i * len(ids) / n)] for i in range(n)]
+
+
 def run_eval(scenario_ids, configs, model="granite4:micro", provider="ollama", base_url=None, db_path=DB_PATH,
              runs_db=EVAL_DB, retrieval_backend=None, log=print):
     store = RunStore(runs_db)
@@ -179,7 +186,12 @@ def make_figure(metrics: dict, path: Path):
     fig.tight_layout(); fig.savefig(path, dpi=150); plt.close(fig)
 
 
+def model_slug(model: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", model.lower()).strip("-")
+
+
 def write_report(metrics: dict, model: str, mix: dict, examples: list[str], out_dir: Path = REPORT_DIR) -> None:
+    slug = model_slug(model)
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "figures").mkdir(parents=True, exist_ok=True)
     rows = ["| config | first draft compliant | final compliant | escalated | offer matches playbook | prompt tokens | LLM calls | LLM time / run |",
@@ -208,12 +220,12 @@ def write_report(metrics: dict, model: str, mix: dict, examples: list[str], out_
           "## Results\n" + "\n".join(rows), "\n## Paired comparisons\n" + "\n".join(con),
           "\n## Which rules the first drafts break\n" + "\n".join(rules),
           "\n## Grounding and retrieval\n" + "\n".join(ground + recall),
-          "\n![compliance](figures/agent_eval.png)\n"]
+          f"\n![compliance](figures/agent_eval_{slug}.png)\n"]
     if examples:
         md.append("## Example repairs (first draft -> verifier feedback -> final)\n" + "\n\n".join(examples))
-    (out_dir / "agent_eval.md").write_text("\n".join(md) + "\n", encoding="utf-8")
-    (out_dir / "agent_eval.json").write_text(json.dumps(metrics, indent=2, default=float), encoding="utf-8")
-    make_figure(metrics, out_dir / "figures" / "agent_eval.png")
+    (out_dir / f"agent_eval_{slug}.md").write_text("\n".join(md) + "\n", encoding="utf-8")
+    (out_dir / f"agent_eval_{slug}.json").write_text(json.dumps(metrics, indent=2, default=float), encoding="utf-8")
+    make_figure(metrics, out_dir / "figures" / f"agent_eval_{slug}.png")
 
 
 def repair_examples(runs: list[dict], limit: int = 3) -> list[str]:
@@ -252,11 +264,11 @@ def main():
         EVAL_DB.unlink()
     model_tag = "scripted" if a.provider == "scripted" else a.model
     if not a.report_only:
-        ids = build_scenarios(a.n)
+        ids = subsample(build_scenarios(max(48, a.n)), a.n)
         names = ORDER if a.configs == "all" else a.configs.split(",")
         run_eval(ids, names, a.model, a.provider, a.base_url, retrieval_backend=a.retrieval)
     m = report(RunStore(EVAL_DB), model_tag)
-    print(f"\nReport written to {REPORT_DIR / 'agent_eval.md'} ({m['n']} scenarios x {len(m['configs'])} configs)")
+    print(f"\nReport written to {REPORT_DIR / ('agent_eval_' + model_slug(model_tag) + '.md')} ({m['n']} scenarios x {len(m['configs'])} configs)")
     for name, c in m["configs"].items():
         print(f"  {name:<12} first {pct(c['first_ok']):<26} final {pct(c['final_ok'])}")
 

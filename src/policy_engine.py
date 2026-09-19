@@ -82,6 +82,15 @@ def review_flags(profile: dict, proposal: Proposal) -> list[str]:
 
 
 # ----------------------------------------------------------------------------- verifier
+def _snippet(text: str, pattern: str, width: int = 26) -> str:
+    """Short quote of the offending text, so a small model can see exactly what to remove."""
+    m = re.search(pattern, text, flags=re.I)
+    if not m:
+        return ""
+    lo, hi = max(0, m.start() - width), min(len(text), m.end() + width)
+    return "..." + " ".join(text[lo:hi].split()) + "..."
+
+
 def _hits(patterns, text):
     return sorted({m.group(0).lower() for p in patterns for m in re.finditer(p, text, flags=re.I)})
 
@@ -127,14 +136,16 @@ def _message_violations(p: Proposal) -> list[Violation]:
     v, msg, o = [], p.message, OFFERS[p.offer_id]
     limit = SMS_MAX_CHARS if p.channel == "sms" else EMAIL_MAX_CHARS
     if len(msg) > limit:
-        v.append(Violation("length", f"{p.channel} message is {len(msg)} characters; the limit is {limit}"))
+        v.append(Violation("length", f"{p.channel} message is {len(msg)} characters; the limit is {limit}. "
+                                     f"Rewrite it in at most {limit - 70} characters"))
     if o["promotional"] and OPT_OUT_LINE.lower() not in msg.lower():
         v.append(Violation("opt_out_line", f'promotional messages must include the exact line "{OPT_OUT_LINE}"'))
     for rule, patterns in (("forbidden_language", FORBIDDEN_MARKETING), ("prediction_terms", PREDICTION_TERMS),
                            ("protected_terms", PROTECTED_TERMS)):
         found = _hits(patterns, msg)
         if found:
-            v.append(Violation(rule, f"remove these words or phrases from the message: {found}"))
+            quotes = "; ".join(f'"{_snippet(msg, re.escape(w))}"' for w in found[:2])
+            v.append(Violation(rule, f"remove these words or phrases from the message: {found} (found in: {quotes})"))
     if not o["promotional"]:
         found = _hits(PROMO_WORDS, msg)
         if found:
@@ -146,7 +157,10 @@ def _message_violations(p: Proposal) -> list[Violation]:
                "TERM_UPGRADE": {"10", "12"}, "TECH_SUPPORT_TRIAL": {"3"}, "SERVICE_CHECKIN": set()}[p.offer_id]
     found_nums = set(re.findall(r"\d+(?:\.\d+)?", msg))
     if found_nums - allowed:
-        v.append(Violation("numbers", f"the message contains numbers that are not offer terms: {sorted(found_nums - allowed)}"))
+        extra = sorted(found_nums - allowed)
+        quotes = "; ".join(f'"{_snippet(msg, rf"(?<![0-9.]){re.escape(n)}(?![0-9])")}"' for n in extra[:2])
+        v.append(Violation("numbers", f"the message contains numbers that are not offer terms: {extra}. "
+                                      f"Remove them (found in: {quotes})"))
     if allowed - found_nums:
         v.append(Violation("numbers", f"the message must state the offer terms; missing numbers: {sorted(allowed - found_nums)}"))
     return v

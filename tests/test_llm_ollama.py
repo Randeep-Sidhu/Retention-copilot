@@ -74,3 +74,13 @@ def test_not_json_at_all_is_reported_not_raised(fake_ollama):
     url, _ = fake_ollama("Sure! Here is an offer for you.")
     res = OllamaLLM(base_url=url).draft([("system", "rules"), ("human", "facts")])
     assert res.proposal is None and res.error
+
+
+def test_revision_attempts_sample_with_a_different_seed(fake_ollama):
+    url, seen = fake_ollama(GOOD.model_dump_json())
+    llm = OllamaLLM(base_url=url, seed=42)
+    for attempt in (0, 1, 2):
+        llm.draft([("system", "rules"), ("human", "facts")], attempt=attempt)
+    opts = [r["options"] for r in seen]
+    assert [o["temperature"] for o in opts] == [0.0, 0.3, pytest.approx(0.6)]
+    assert [o["seed"] for o in opts] == [42, 43, 44]

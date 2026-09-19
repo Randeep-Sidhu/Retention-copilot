@@ -170,3 +170,28 @@ def test_documents_state_the_numbers_the_verifier_enforces():
                    f"${S.ABS_DISCOUNT_CAP_PER_MONTH:.0f}", str(S.MAX_CONTACTS_90D), f"{S.SMS_MAX_CHARS} characters",
                    S.OPT_OUT_LINE, f"{S.HIGH_RISK_THRESHOLD:.2f}"):
         assert needle in text, needle
+
+
+# ------------------------------------------------------------------ feedback quality (what a small model actually sees)
+REAL_DRAFT = ("Dear Customer,\n\nWe appreciate your continued choice of Maple Telecom. As a valued customer with 17 months of "
+              "tenure, we are offering you a 10% discount on your monthly charges for up to 6 months. Thank you for being "
+              "part of the Maple Telecom family. Reply STOP to opt out at any time.")
+
+
+def test_violation_details_quote_the_offending_text_and_give_a_length_target():
+    prop = proposal(message=REAL_DRAFT + " " + "Thank you for choosing us. " * 8)          # also over the SMS limit
+    found = {v.rule: v.detail for v in check(prop, profile(), VALID_IDS)}
+    assert "17 months" in found["numbers"] and "found in" in found["numbers"]
+    assert "family" in found["protected_terms"] and "Maple Telecom family" in found["protected_terms"]
+    assert "at most 250 characters" in found["length"]
+
+
+def test_revision_request_asks_for_a_full_rewrite_only_for_message_problems():
+    from src.prompts import revision_request
+    assert "from scratch" in revision_request(["[numbers] contains 17", "[length] too long"])
+    assert "from scratch" not in revision_request(["[discount_cap] discount_pct 15 is not allowed"])
+    assert "Change only what is needed" in revision_request(["[eligibility] not available"])
+
+
+def test_schema_puts_the_reasoning_field_first():
+    assert list(PROPOSAL_SCHEMA["properties"])[0] == "rationale"

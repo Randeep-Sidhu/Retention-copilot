@@ -3,7 +3,7 @@ import json
 
 import pytest
 
-from src.evaluate import (compute_metrics, mcnemar_exact, report, rules_of, run_eval, substantive, wilson)
+from src.evaluate import (compute_metrics, mcnemar_exact, report, rules_of, run_eval, subsample, substantive, wilson)
 from src.store import RunStore
 
 IDS = ["A-FIBER", "B-ONEYR", "C-OPTOUT", "D-LIMIT", "F-2YR"]
@@ -70,5 +70,12 @@ def test_end_to_end_with_scripted_llm_is_resumable_and_writes_the_report(test_db
     m = report(RunStore(runs_db), "scripted", db_path=test_db, out_dir=out)
     assert m["n"] == 5 and m["configs"]["rag+verify"]["final_ok"]["k"] == 5
     assert all(m["configs"][c]["first_ok"]["k"] == 5 for c in m["configs"])   # the reference drafter is policy-perfect
-    assert (out / "agent_eval.md").exists() and (out / "figures" / "agent_eval.png").exists()
-    assert json.loads((out / "agent_eval.json").read_text())["n"] == 5
+    assert (out / "agent_eval_scripted.md").exists() and (out / "figures" / "agent_eval_scripted.png").exists()
+    assert json.loads((out / "agent_eval_scripted.json").read_text())["n"] == 5
+
+
+def test_subsample_is_evenly_spaced_unique_and_order_preserving():
+    ids = [f"C{i:02d}" for i in range(48)]
+    sub = subsample(ids, 8)
+    assert sub == ["C00", "C06", "C12", "C18", "C24", "C30", "C36", "C42"]
+    assert subsample(ids, 100) == ids and len(set(subsample(ids, 7))) == 7

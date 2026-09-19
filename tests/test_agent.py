@@ -141,3 +141,23 @@ def test_rag_context_recalls_most_required_sections(test_db, tmp_path):
         need = required_sections(prof)
         recalls.append(len(need & got) / len(need))
     assert sum(recalls) / len(recalls) >= 0.9, recalls
+
+
+def test_policy_modes_get_the_decision_procedure_and_baseline_does_not(test_db):
+    prof = SqlTool(test_db).profile("A-FIBER")
+    for mode, has in (("none", False), ("full", True), ("rag", True)):
+        system = build_messages(mode, "[x#y]\ntext" if mode != "none" else "", prof)[0][1]
+        assert ("FIRST offer in its preferred order" in system) is has, mode
+        assert "short SMS" in system                                    # format guidance is shared by every config
+
+
+def test_revisions_are_requested_with_increasing_attempt_numbers(test_db, tmp_path):
+    seen = []
+
+    class Spy(ScriptedLLM):
+        def draft(self, messages, profile=None, attempt=0):
+            seen.append(attempt)
+            return super().draft(messages, profile, attempt)
+
+    make_agent(test_db, tmp_path, llm=Spy(always_fault=drop_opt_out)).run("A-FIBER")
+    assert seen == [0, 1, 2]

@@ -2,25 +2,34 @@
 from __future__ import annotations
 
 import json
+import re
 
 from .policy_spec import COMPANY
 
 SYSTEM_BASE = f"""You are a retention-offer drafting assistant for {COMPANY}, a telecom company. For one customer you choose the next retention action and draft the customer message. A person reviews everything before it is sent.
 
-Return ONE JSON object with these fields:
+Return ONE JSON object with these fields, in this order:
+- rationale: think first, in one or two sentences: the customer's contract and internet service, which offer fits, and why.
 - action: "OFFER" or "NO_ACTION".
 - offer_id: LOYALTY_DISCOUNT (percentage discount on monthly charges), TERM_UPGRADE (discount for moving to a 12-month term), TECH_SUPPORT_TRIAL (Tech Support add-on at no charge for a few months), SERVICE_CHECKIN (non-promotional call invitation), or NONE when action is NO_ACTION.
 - discount_pct and duration_months: the numbers in the offer terms (0 when the offer has none).
 - channel: use "sms".
-- message: the customer-facing text (empty string for NO_ACTION).
-- rationale: one or two sentences for the human reviewer.
+- message: the text sent to the customer, a short SMS of one or two sentences with no sign-off (empty string for NO_ACTION). The customer facts are for your decision only; do not repeat them in the message.
 - citations: ids of the policy sections you relied on (empty list if no policy is provided)."""
+
+_PROCEDURE = """
+How to decide:
+1. If the customer has reached the contact limit, the action is NO_ACTION.
+2. Otherwise open the playbook for the customer's contract and internet service and take the FIRST offer in its preferred order that the customer is eligible for; check that offer's eligibility rules in the catalog.
+3. Use that offer's exact terms and stay within the discount caps.
+4. Write the message following the message standards."""
 
 POLICY_INSTRUCTIONS = {
     "none": "No policy documents are provided. Use good practice for compliant telecom marketing.",
-    "full": "Follow the company policy below exactly. Cite the section ids (shown in square brackets) that you relied on.",
+    "full": ("Follow the company policy below exactly. Cite the section ids (shown in square brackets) that you relied on."
+             + _PROCEDURE),
     "rag": ("Follow the policy sections below exactly; they were retrieved for this customer. Cite the section ids "
-            "(shown in square brackets) that you relied on, and only ids shown below."),
+            "(shown in square brackets) that you relied on, and only ids shown below." + _PROCEDURE),
 }
 
 
@@ -56,12 +65,20 @@ def customer_facts(profile: dict) -> str:
         "Choose the next retention action for this customer and return the JSON object."])
 
 
+_MESSAGE_RULES = {"length", "numbers", "forbidden_language", "protected_terms", "prediction_terms", "opt_out_line",
+                  "promo_in_service_message"}
+_REWRITE_HINT = ("Rewrite the whole message from scratch instead of editing it, as a short SMS: 'Hello,' + one sentence "
+                 "that states only the offer terms + the next step (for example 'Reply YES to accept.') + the opt-out "
+                 "line if the offer is promotional. No sign-off, no facts about the customer, at most 250 characters.")
+
+
 def revision_request(violations: list[str]) -> str:
     if not violations:
         return "Return a corrected JSON object."
+    rules = {m.group(1) for v in violations if (m := re.match(r"\[(\w+)\]", v))}
     listed = "\n".join(f"- {v}" for v in violations)
-    return (f"Your draft broke these policy rules:\n{listed}\n\n"
-            "Return a corrected JSON object. Change only what is needed to fix the problems.")
+    tail = _REWRITE_HINT if rules & _MESSAGE_RULES else "Change only what is needed to fix the problems."
+    return f"Your draft broke these policy rules:\n{listed}\n\nReturn a corrected JSON object. {tail}"
 
 
 def build_messages(policy_mode: str, policy_text: str, profile: dict,
