@@ -1,8 +1,13 @@
-# Phase 1 (data, model, business case). Python 3.11+ (3.12 recommended).
+# Python 3.11+ (3.12 recommended)
 pandas>=2.2
 numpy>=1.26
 scikit-learn>=1.5
 scipy>=1.11
 matplotlib>=3.8
 joblib>=1.3
+pydantic>=2.6
+langgraph>=1.0
+langchain-core>=1.0
+langchain-ollama>=1.0
+fastembed>=0.5      # dense retrieval (ONNX, no PyTorch); first use downloads a ~100 MB embedding model
 pytest>=8.0

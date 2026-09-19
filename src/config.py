@@ -4,7 +4,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT / "data"
-DB_PATH = ROOT / "db" / "retention.db"
+DB_PATH = ROOT / "db" / "retention.db"          # analytics store (read-only for the agent)
+RUNS_DB_PATH = ROOT / "db" / "runs.db"          # agent run log + human review queue (writable)
 ARTIFACT_DIR = ROOT / "artifacts"
 REPORT_DIR = ROOT / "reports"
 FIG_DIR = REPORT_DIR / "figures"
