@@ -2,6 +2,8 @@
 
 [![tests](https://github.com/Randeep-Sidhu/Retention-copilot/actions/workflows/tests.yml/badge.svg)](https://github.com/Randeep-Sidhu/Retention-copilot/actions/workflows/tests.yml)
 
+   **Live demo:** [https://retention-copilot-r-s.streamlit.app/](https://retention-copilot-r-s.streamlit.app/) (the free host puts the app to sleep, so the first load can take about 30 seconds)
+
 Churn models usually stop at a score. This project takes the next step: for a customer who is worth contacting, it drafts the retention message, checks the draft against a written company policy, and puts it in front of a person to approve.
 
 There are four pieces. A logistic regression ranks customers by churn risk, and an expected-value rule decides who is worth the cost of a contact. A LangGraph agent reads the policy sections that apply to the customer and drafts an offer and a short SMS with IBM's Granite 4 model. A rule-based verifier checks the draft and sends any violations back to the model. A review queue holds the result until someone approves or rejects it.
