@@ -11,7 +11,10 @@ I built it to practise the parts of applied data science that coursework tends t
 ## Screenshots
 
 <!-- SCREENSHOTS:START -->
-<!-- add screenshots to docs/img and run python -m src.update_readme -->
+<table>
+<tr><td width="50%" valign="top"><a href="docs/img/01-overview.png"><img src="docs/img/01-overview.png" alt="Overview" width="100%"></a><br><sub>Overview</sub></td><td width="50%" valign="top"><a href="docs/img/02-what-if.png"><img src="docs/img/02-what-if.png" alt="What-if economics on the held-out customers" width="100%"></a><br><sub>What-if economics on the held-out customers</sub></td></tr>
+<tr><td width="50%" valign="top"><a href="docs/img/03-agent-replay.png"><img src="docs/img/03-agent-replay.png" alt="Agent replay: one customer, start to finish" width="100%"></a><br><sub>Agent replay: one customer, start to finish</sub></td><td width="50%" valign="top"><a href="docs/img/04-evaluation.png"><img src="docs/img/04-evaluation.png" alt="Evaluation: policy source and verifier loop" width="100%"></a><br><sub>Evaluation: policy source and verifier loop</sub></td></tr>
+</table>
 <!-- SCREENSHOTS:END -->
 
 ## Results

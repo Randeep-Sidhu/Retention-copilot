@@ -122,8 +122,15 @@ def test_what_if_page_recomputes_when_an_assumption_changes(demo):
     assert html_of(at) != before
 
 
-def test_evaluation_page_lists_both_models_and_the_paired_tests(demo):
+def test_evaluation_page_has_a_model_switch_charts_and_the_tables(demo):
     at = open_page("Evaluation")
-    assert not at.exception
-    assert len(at.tabs) >= 2 and any("granite4-small-h" in t.label for t in at.tabs)
-    assert len(at.dataframe) >= 3
+    assert not at.exception, [e.value for e in at.exception]
+    radio = next(r for r in at.radio if r.label == "Model")
+    assert set(radio.options) == {"Granite 4 Micro (3B)", "Granite 4 H-Small (32B MoE)"}
+    radio.set_value("Granite 4 Micro (3B)").run()
+    assert not at.exception and len(at.dataframe) >= 1
+
+
+def test_overview_has_no_technology_chip_row(demo):
+    text = html_of(open_page("Overview"))
+    assert "rc-tag" not in text and "scikit-learn" not in text

@@ -65,10 +65,24 @@ def test_update_fills_all_blocks_and_is_idempotent(tmp_path):
     eval_json(reports, "granite4-micro")
     first = update(readme, reports, tmp_path / "docs" / "img")
     assert "old" not in first and "ROC-AUC 0.841" in first and "granite4-micro" in first
-    assert "![Agent replay](docs/img/01-agent-replay.png)" in first
+    assert '<img src="docs/img/01-agent-replay.png" alt="Agent replay: one customer, start to finish"' in first
+    assert '<a href="docs/img/01-agent-replay.png">' in first and first.count("<td") == 2       # padded to a full row
     assert update(readme, reports, tmp_path / "docs" / "img") == first
 
 
 def test_missing_markers_are_an_error():
     with pytest.raises(ValueError):
         replace_block("no markers here", "MODEL", "x")
+
+
+def test_screenshots_form_a_two_column_grid_in_file_order(tmp_path):
+    from src.update_readme import render_screenshots
+    img = tmp_path / "docs" / "img"
+    img.mkdir(parents=True)
+    for name in ("02-what-if.png", "01-overview.png", "04-evaluation.png", "03-agent-replay.png"):
+        (img / name).write_bytes(b"x")
+    html = render_screenshots(img, tmp_path)
+    assert html.count("<tr>") == 2 and html.count("<td") == 4
+    order = [html.index(f"docs/img/{n}") for n in ("01-overview.png", "02-what-if.png", "03-agent-replay.png", "04-evaluation.png")]
+    assert order == sorted(order)
+    assert "What-if economics on the held-out customers" in html

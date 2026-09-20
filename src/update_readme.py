@@ -98,16 +98,29 @@ def render_results(models: dict[str, dict]) -> str:
     return "\n".join(out).rstrip()
 
 
-def render_screenshots(img_dir: Path, readme_dir: Path) -> str:
+CAPTIONS = {"overview": "Overview", "what-if": "What-if economics on the held-out customers",
+            "agent-replay": "Agent replay: one customer, start to finish", "evaluation": "Evaluation: policy source and verifier loop"}
+
+
+def _caption(stem: str) -> str:
+    name = re.sub(r"^\d+[-_ ]*", "", stem).strip().lower()
+    return CAPTIONS.get(name) or name.replace("-", " ").replace("_", " ").capitalize()
+
+
+def render_screenshots(img_dir: Path, readme_dir: Path, columns: int = 2) -> str:
+    """A two-column grid; every picture links to the full-size file."""
     imgs = sorted([p for p in img_dir.glob("*") if p.suffix.lower() in (".png", ".jpg", ".jpeg")]) if img_dir.exists() else []
     if not imgs:
         return "<!-- add screenshots to docs/img and run python -m src.update_readme -->"
-    lines = []
+    cells = []
     for p in imgs:
-        caption = re.sub(r"^\d+[-_ ]*", "", p.stem).replace("-", " ").replace("_", " ").strip().capitalize()
-        rel = p.relative_to(readme_dir).as_posix()
-        lines.append(f"![{caption}]({rel})\n*{caption}*\n")
-    return "\n".join(lines).rstrip()
+        rel, cap = p.relative_to(readme_dir).as_posix(), _caption(p.stem)
+        cells.append(f'<td width="{100 // columns}%" valign="top"><a href="{rel}"><img src="{rel}" alt="{cap}" width="100%"></a>'
+                     f"<br><sub>{cap}</sub></td>")
+    while len(cells) % columns:
+        cells.append(f'<td width="{100 // columns}%"></td>')
+    rows = ["<tr>" + "".join(cells[i:i + columns]) + "</tr>" for i in range(0, len(cells), columns)]
+    return "<table>\n" + "\n".join(rows) + "\n</table>"
 
 
 def replace_block(text: str, name: str, body: str) -> str:
